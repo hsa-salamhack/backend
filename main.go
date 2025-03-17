@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/hsa-salamhack/backend/routes"
@@ -23,7 +22,7 @@ func main() {
 		case "DELETE":
 			app.Delete(route.Name, route.Run)
 		default:
-			log.Printf("❌ %s %s\n", route.Method, route.Name)
+			fmt.Printf("❌ %s %s\n", route.Method, route.Name)
 		}
 
 		fmt.Printf("✅ %s %s\n", route.Method, route.Name)

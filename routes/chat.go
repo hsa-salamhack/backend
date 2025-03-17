@@ -2,6 +2,10 @@ package routes
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
 	"os"
 
 	"github.com/gofiber/fiber/v2"
@@ -32,7 +36,8 @@ func init() {
 				ID      string `json:"uuid"`
 				Message string `json:"message"`
 				Model   string `json:"model"`
-				Sum     string `json:"summary"`
+				Lang    string `json:"lang"`
+				Wiki    string `json:"wiki"`
 			}
 
 			var chat Chat
@@ -43,11 +48,18 @@ func init() {
 			user_message := database.Message{ChatID: chat.ID, Content: chat.Message, Role: "User"}
 			database.DB.Create(&user_message)
 
+			respo, _ := http.Get("http://localhost:5050/wiki/" + chat.Lang + "/" + chat.Wiki)
+			defer respo.Body.Close()
+			body, _ := io.ReadAll(respo.Body)
+
+			var data map[string]interface{}
+			json.Unmarshal(body, &data)
+
 			modelName := "gemini-1.5-flash"
 			model := client.GenerativeModel(modelName)
 			model.SystemInstruction = genai.NewUserContent(
 				genai.Text(
-					"You are an expert at this topic:\n\n" + chat.Sum + "\n, talk from the prespective of " + chat.Model,
+					"You are an expert at this topic:\n\n" + data["full_body"].(string) + "\n, talk from the prespective of " + chat.Model,
 				),
 			)
 
@@ -56,16 +68,16 @@ func init() {
 				return err
 			}
 
-			airesp := resp.Candidates[0].Content.Parts[0]
+			content := fmt.Sprintf("%v", resp.Candidates[0].Content.Parts[0])
 
 			aimessage := database.Message{
 				ChatID:  chat.ID,
-				Content: airesp,
+				Content: content,
 				Role:    "AI",
 			}
 			database.DB.Create(&aimessage)
 
-			return c.JSON(fiber.Map{"message": airesp})
+			return c.JSON(fiber.Map{"message": content})
 		},
 	})
 }
