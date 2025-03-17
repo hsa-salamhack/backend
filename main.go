@@ -4,12 +4,20 @@ import (
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/swagger"              // Import Swagger middleware
+	_ "github.com/hsa-salamhack/backend/docs" // Import generated docs
 	"github.com/hsa-salamhack/backend/routes"
-	_ "github.com/hsa-salamhack/backend/routes"
 )
 
+// @title Wiki? API
+// @version 0.5
+// @description Wiki? API
+// @host localhost:3000
+// @BasePath /
 func main() {
 	app := fiber.New()
+
+	app.Get("/swagger/*", swagger.HandlerDefault)
 
 	for _, route := range routes.AllRoutes {
 		switch route.Method {

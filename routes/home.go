@@ -7,7 +7,7 @@ func init() {
 		Name:   "/",
 		Method: "GET",
 		Run: func(c *fiber.Ctx) error {
-			return c.JSON(fiber.Map{"message": "Test route"})
+			return c.Redirect("/swagger/index.html")
 		},
 	})
 }

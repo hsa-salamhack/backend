@@ -1,0 +1,274 @@
+basePath: /
+definitions:
+  routes.Article:
+    properties:
+      lang:
+        example: en
+        type: string
+      wiki:
+        example: French_Revolution
+        type: string
+    type: object
+  routes.Chat:
+    properties:
+      lang:
+        example: en
+        type: string
+      message:
+        example: What is the capital of France?
+        type: string
+      model:
+        example: conservative
+        type: string
+      uuid:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      wiki:
+        example: French_Revolution
+        type: string
+    type: object
+  routes.ChatResponse:
+    properties:
+      message:
+        example: Paris is the capital of France.
+        type: string
+    type: object
+  routes.MessageResponse:
+    properties:
+      chat_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      content:
+        example: What is the capital of France?
+        type: string
+      created_at:
+        example: "2025-03-17T23:23:46Z"
+        type: string
+      id:
+        example: 2
+        type: integer
+      role:
+        example: User
+        type: string
+    type: object
+  routes.MessagesResponse:
+    properties:
+      messages:
+        items:
+          $ref: '#/definitions/routes.MessageResponse'
+        type: array
+    type: object
+  routes.SearchResult:
+    properties:
+      summary:
+        example: The French Revolution was a period of radical political and societal
+          change in France...
+        type: string
+      title:
+        example: French Revolution
+        type: string
+      url:
+        example: /wiki/en/French_Revolution
+        type: string
+    type: object
+  routes.SummaryResponse:
+    properties:
+      message:
+        example: The French Revolution was a period of radical political and societal
+          change in France...
+        type: string
+    type: object
+  routes.WikiResponse:
+    properties:
+      full_body:
+        example: The French Revolution was a period of radical political and societal
+          change in France...
+        type: string
+      title:
+        example: French Revolution
+        type: string
+    type: object
+host: localhost:3000
+info:
+  contact: {}
+  description: Wiki? API
+  title: Wiki? API
+  version: "0.5"
+paths:
+  /chat:
+    post:
+      consumes:
+      - application/json
+      description: Sends a message to the AI model with a Wikipedia context.
+      parameters:
+      - description: Chat Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/routes.Chat'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful response
+          schema:
+            $ref: '#/definitions/routes.ChatResponse'
+        "400":
+          description: Bad request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Chat with AI
+      tags:
+      - Chat
+  /messages/{chat_id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all messages for a specific chat ID
+      parameters:
+      - description: Chat ID
+        in: path
+        name: chat_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of messages
+          schema:
+            $ref: '#/definitions/routes.MessagesResponse'
+        "400":
+          description: Bad request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get chat messages
+      tags:
+      - Messages
+  /search:
+    get:
+      consumes:
+      - application/json
+      description: Searches Wikipedia for articles matching the query
+      parameters:
+      - description: Search query
+        in: query
+        name: q
+        required: true
+        type: string
+      - description: 'Language code (default: en)'
+        in: query
+        name: lang
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Search results
+          schema:
+            items:
+              $ref: '#/definitions/routes.SearchResult'
+            type: array
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Search Wikipedia
+      tags:
+      - Search
+  /summary:
+    post:
+      consumes:
+      - application/json
+      description: Generates a concise summary of a Wikipedia article
+      parameters:
+      - description: Article Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/routes.Article'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful response
+          schema:
+            $ref: '#/definitions/routes.SummaryResponse'
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Generate article summary
+      tags:
+      - Summary
+  /wiki/{lang}/{wiki}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a Wikipedia article by language and article name
+      parameters:
+      - description: Language code
+        in: path
+        name: lang
+        required: true
+        type: string
+      - description: Wikipedia article name
+        in: path
+        name: wiki
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Wikipedia article content
+          schema:
+            $ref: '#/definitions/routes.WikiResponse'
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Article not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get Wikipedia article
+      tags:
+      - Wiki
+swagger: "2.0"

@@ -19,7 +19,7 @@ type WikiRaw struct {
 				User      string `json:"user"`
 				Timestamp string `json:"timestamp"`
 				Comment   string `json:"comment"`
-				Anon      string `json:"anon,omitempty"`
+				Anon      bool   `json:"anon,omitempty"`
 				Diff      string `json:"diff,omitempty"`
 			} `json:"revisions"`
 		} `json:"pages"`
