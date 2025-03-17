@@ -74,7 +74,7 @@ async function wiki(term, lang = "en") {
     bionic_summary: bionic_sum,
     sections: sects,
 
-    // full_body_markdown: fullbody,
+    full_body: fullbody,
     // full_body_bionic: bionic,
   };
 }

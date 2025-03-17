@@ -23,10 +23,10 @@ func main() {
 		case "DELETE":
 			app.Delete(route.Name, route.Run)
 		default:
-			log.Printf("❌ %s %s", route.Method, route.Name)
+			log.Printf("❌ %s %s\n", route.Method, route.Name)
 		}
 
-		fmt.Printf("✅ %s %s", route.Method, route.Name)
+		fmt.Printf("✅ %s %s\n", route.Method, route.Name)
 	}
 
 	app.Listen(":3000")
