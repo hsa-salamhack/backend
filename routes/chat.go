@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/generative-ai-go/genai"
@@ -19,7 +20,7 @@ import (
 var (
 	aiClient  *genai.Client
 	once      sync.Once
-	wikiCache = make(map[string]string) // Simple in-memory cache for Wikipedia articles
+	wikiCache = make(map[string]string)
 )
 
 func init() {
@@ -32,8 +33,9 @@ func init() {
 			option.WithAPIKey(os.Getenv("GEMINI_API_KEY")),
 		)
 		if err != nil {
-			panic(fmt.Sprintf("Failed to initialize AI client: %v", err))
+			fmt.Sprintf("Failed to initialize AI client: %v", err)
 		}
+		go resetCache()
 	})
 	Register(Route{
 		Name:   "/chat",
@@ -134,11 +136,19 @@ func fetchWiki(lang, topic string) (string, error) {
 		return "", err
 	}
 
-	var data CacheStruct
+	var data WikiResponse
 	if err := json.Unmarshal(body, &data); err != nil {
 		return "", err
 	}
 
 	wikiCache[cacheKey] = data.FullBody
 	return data.FullBody, nil
+}
+
+func resetCache() {
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+	for range ticker.C {
+		wikiCache = make(map[string]string)
+	}
 }

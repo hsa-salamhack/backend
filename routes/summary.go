@@ -3,12 +3,12 @@ package routes
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/generative-ai-go/genai"
@@ -16,7 +16,23 @@ import (
 	"google.golang.org/api/option"
 )
 
+var (
+	oncce     sync.Once
+	aiClient2 *genai.Client
+)
+
 func init() {
+	oncce.Do(func() {
+		godotenv.Load()
+		var err error
+		aiClient2, err = genai.NewClient(
+			context.Background(),
+			option.WithAPIKey(os.Getenv("GEMINI_API_KEY")),
+		)
+		if err != nil {
+			panic(fmt.Sprintf("Failed to initialize AI client: %v", err))
+		}
+	})
 	Register(Route{
 		Name:   "/summary",
 		Method: "POST",
@@ -45,36 +61,36 @@ type SummaryResponse struct {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /summary [post]
 func summaryHandler(c *fiber.Ctx) error {
-	godotenv.Load()
-	ctx := context.Background()
-
-	client, err := genai.NewClient(ctx, option.WithAPIKey(os.Getenv("GEMINI_API_KEY")))
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Gemini cant get up")
-	}
-
-	defer client.Close()
-
 	var wiki Article
 	if err := c.BodyParser(&wiki); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	respo, _ := http.Get("http://localhost:5050/wiki/" + wiki.Lang + "/" + wiki.Wiki)
+	// Fetch Wikipedia content
+	respo, err := http.Get("http://localhost:5050/wiki/" + wiki.Lang + "/" + wiki.Wiki)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to fetch Wikipedia data")
+	}
 	defer respo.Body.Close()
-	body, _ := io.ReadAll(respo.Body)
+
+	body, err := io.ReadAll(respo.Body)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to read Wikipedia response")
+	}
 
 	var data map[string]interface{}
-	json.Unmarshal(body, &data)
+	if err := json.Unmarshal(body, &data); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to parse Wikipedia data")
+	}
 
+	// Construct AI prompt
 	var sysint string
-
 	if wiki.Section == nil {
 		sysint = "Summarize this article in under 3 paragraphs in " + wiki.Lang + ":\n\n" + data["full_body"].(string)
 	} else {
 		sections, ok := data["sections"].(map[string]interface{})
 		if !ok {
-			return errors.New("invalid sections format")
+			return fiber.NewError(fiber.StatusInternalServerError, "Invalid sections format")
 		}
 
 		sectionKey := strings.TrimSpace(*wiki.Section)
@@ -86,10 +102,10 @@ func summaryHandler(c *fiber.Ctx) error {
 		sysint = "You're a Wikipedia summarizer. Summarize the given article section while keeping all info intact. Keep it under 3 paragraphs. Use " +
 			wiki.Lang + ":\n\n" + sectionText["body"].(string)
 	}
-	modelName := "gemini-2.0-flash"
-	model := client.GenerativeModel(modelName)
 
-	resp, err := model.GenerateContent(ctx, genai.Text(sysint))
+	// Generate AI response
+	model := aiClient2.GenerativeModel("gemini-2.0-flash")
+	resp, err := model.GenerateContent(context.Background(), genai.Text(sysint))
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}

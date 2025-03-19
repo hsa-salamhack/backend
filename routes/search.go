@@ -1,13 +1,19 @@
 package routes
 
 import (
-	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/abadojack/whatlanggo"
 	"github.com/gofiber/fiber/v2"
 	gowiki "github.com/trietmn/go-wiki"
 )
+
+var searchCache sync.Map
+
+type cacheEntryy struct {
+	results []SearchResult
+}
 
 func init() {
 	Register(Route{
@@ -45,22 +51,27 @@ func search(c *fiber.Ctx) error {
 		})
 	}
 
+	var langMap = map[string]string{
+		"eng": "en", "ara": "ar", "fra": "fr", "deu": "de", "per": "ar",
+	}
+
 	if lang == "" {
 		info := whatlanggo.Detect(query)
-		lango := info.Lang.Iso6393()
-		langiso := lango[:2]
-		fmt.Println("Lang: ", langiso)
-		if lango == "" {
-			lang = "en"
-		} else if langiso == "pe" {
-			lang = "ar"
+		langCode := info.Lang.Iso6393()
+		if val, ok := langMap[langCode]; ok {
+			lang = val
 		} else {
-			lang = langiso
+			lang = "en"
 		}
 	}
 
+	cacheKey := query + "|" + lang
+	if entry, found := searchCache.Load(cacheKey); found {
+		return c.JSON(entry.(*cacheEntryy).results)
+	}
+
 	gowiki.SetLanguage(lang)
-	search_result, _, err := gowiki.Search(query, 3, false)
+	searchResult, _, err := gowiki.Search(query, 3, false)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to search Wikipedia\n" + err.Error(),
@@ -68,20 +79,35 @@ func search(c *fiber.Ctx) error {
 	}
 
 	var results []SearchResult
-	for _, result := range search_result {
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	for _, result := range searchResult {
 		if strings.Contains(result, "(disambiguation)") || strings.Contains(result, "(توضيح)") {
 			continue
 		}
-		sum, _ := gowiki.Summary(result, 2, -1, false, true)
-		cutSum := strings.Split(sum, "==")[0]
+		wg.Add(1)
 
-		results = append(results, SearchResult{
-			Title: result,
-			Sum:   strings.TrimSpace(cutSum),
-			URL:   "/wiki/" + lang + "/" + result,
-			Lang:  lang,
-		})
+		go func(res string) {
+			defer wg.Done()
+			sum, _ := gowiki.Summary(res, 2, -1, false, true)
+			cutSum := strings.Split(sum, "==")[0]
+
+			searchRes := SearchResult{
+				Title: res,
+				Sum:   strings.TrimSpace(cutSum),
+				URL:   "/wiki/" + lang + "/" + res,
+				Lang:  lang,
+			}
+
+			mu.Lock()
+			results = append(results, searchRes)
+			mu.Unlock()
+		}(result)
 	}
 
+	wg.Wait()
+
+	searchCache.Store(cacheKey, &cacheEntryy{results: results})
 	return c.JSON(results)
 }
