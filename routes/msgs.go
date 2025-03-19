@@ -14,11 +14,11 @@ func init() {
 }
 
 type MessageResponse struct {
-	ID        uint   `json:"id"         example:"2"`
-	ChatID    string `json:"chat_id"    example:"123e4567-e89b-12d3-a456-426614174000"`
-	Content   string `json:"content"    example:"What is the capital of France?"`
-	Role      string `json:"role"       example:"User"`
-	CreatedAt string `json:"created_at" example:"2025-03-17T23:23:46Z"`
+	ID      uint   `json:"id"      example:"2"`
+	ChatID  string `json:"chat_id" example:"123e4567-e89b-12d3-a456-426614174000"`
+	Content string `json:"content" example:"What is the capital of France?"`
+	Role    string `json:"role"    example:"User"`
+	Topic   string `json:"topic"   example:"French_Revolution"`
 }
 
 type MessagesResponse struct {

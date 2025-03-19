@@ -64,7 +64,12 @@ func chatHandler(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	userMessage := database.Message{ChatID: chat.ID, Content: chat.Message, Role: "User"}
+	userMessage := database.Message{
+		ChatID:  chat.ID,
+		Content: chat.Message,
+		Role:    "User",
+		Topic:   chat.Wiki,
+	}
 	database.DB.Create(&userMessage)
 
 	respo, _ := http.Get("http://localhost:5050/wiki/" + chat.Lang + "/" + chat.Wiki)

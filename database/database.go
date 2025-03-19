@@ -32,4 +32,5 @@ type Message struct {
 	ChatID  string `gorm:"index"      json:"chat_id"`
 	Content string `                  json:"content"`
 	Role    string `                  json:"role"`
+	Topic   string `                  json:"topic"`
 }
