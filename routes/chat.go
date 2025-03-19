@@ -55,13 +55,13 @@ func chatHandler(c *fiber.Ctx) error {
 
 	client, err := genai.NewClient(ctx, option.WithAPIKey(os.Getenv("GEMINI_API_KEY")))
 	if err != nil {
-		return err
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 	defer client.Close()
 
 	var chat Chat
 	if err := c.BodyParser(&chat); err != nil {
-		return err
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
 	userMessage := database.Message{ChatID: chat.ID, Content: chat.Message, Role: "User"}
@@ -88,7 +88,7 @@ func chatHandler(c *fiber.Ctx) error {
 
 	resp, err := model.GenerateContent(ctx, genai.Text(chat.Message))
 	if err != nil {
-		return err
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
 	content := fmt.Sprintf("%v", resp.Candidates[0].Content.Parts[0])

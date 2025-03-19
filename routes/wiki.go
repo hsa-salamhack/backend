@@ -12,13 +12,18 @@ func init() {
 	Register(Route{
 		Name:   "/wiki/:lang/:wiki",
 		Method: "GET",
-		Run:    wikiHandler,
+		Run:    wiki,
 	})
 }
 
 // WikiResponse represents the structure of the Wikipedia article response
 type WikiResponse struct {
 	Title    string `json:"title"     example:"French Revolution"`
+	Summary  string `json:"summary"   example:"The French Revolution was a period of radical political and societal change in France..."`
+	Sections []struct {
+		Title string `json:"title" example:"Causes"`
+		Body  string `json:"body"  example:"The French Revolution was a period of radical political and societal change in France..."`
+	}
 	FullBody string `json:"full_body" example:"The French Revolution was a period of radical political and societal change in France..."`
 }
 
@@ -34,7 +39,7 @@ type WikiResponse struct {
 // @Failure 404 {object} map[string]string "Article not found"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /wiki/{lang}/{wiki} [get]
-func wikiHandler(c *fiber.Ctx) error {
+func wiki(c *fiber.Ctx) error {
 	lang := c.Params("lang")
 	wiki := c.Params("wiki")
 

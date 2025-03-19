@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/abadojack/whatlanggo"
 	"github.com/gofiber/fiber/v2"
 	gowiki "github.com/trietmn/go-wiki"
 )
@@ -12,7 +13,7 @@ func init() {
 	Register(Route{
 		Name:   "/search",
 		Method: "GET",
-		Run:    searchHandler,
+		Run:    search,
 	})
 }
 
@@ -20,6 +21,7 @@ type SearchResult struct {
 	Title string `json:"title"   example:"French Revolution"`
 	Sum   string `json:"summary" example:"The French Revolution was a period of radical political and societal change in France..."`
 	URL   string `json:"url"     example:"/wiki/en/French_Revolution"`
+	Lang  string `json:"lang"    example:"en"`
 }
 
 // @Summary Search Wikipedia
@@ -33,7 +35,7 @@ type SearchResult struct {
 // @Failure 400 {object} map[string]string "Bad request"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /search [get]
-func searchHandler(c *fiber.Ctx) error {
+func search(c *fiber.Ctx) error {
 	query := c.Query("q")
 	lang := c.Query("lang")
 
@@ -43,15 +45,31 @@ func searchHandler(c *fiber.Ctx) error {
 		})
 	}
 
+	if lang == "" {
+		info := whatlanggo.Detect(query)
+		lango := info.Lang.Iso6393()
+		langiso := lango[:2]
+		fmt.Println("Lang: ", langiso)
+		if lango == "" {
+			lang = "en"
+		} else if langiso == "pe" {
+			lang = "ar"
+		} else {
+			lang = langiso
+		}
+	}
+
 	gowiki.SetLanguage(lang)
 	search_result, _, err := gowiki.Search(query, 3, false)
 	if err != nil {
-		fmt.Println(err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to search Wikipedia\n" + err.Error(),
+		})
 	}
 
 	var results []SearchResult
 	for _, result := range search_result {
-		if strings.Contains(result, "(disambiguation)") {
+		if strings.Contains(result, "(disambiguation)") || strings.Contains(result, "(توضيح)") {
 			continue
 		}
 		sum, _ := gowiki.Summary(result, 2, -1, false, true)
@@ -61,6 +79,7 @@ func searchHandler(c *fiber.Ctx) error {
 			Title: result,
 			Sum:   strings.TrimSpace(cutSum),
 			URL:   "/wiki/" + lang + "/" + result,
+			Lang:  lang,
 		})
 	}
 

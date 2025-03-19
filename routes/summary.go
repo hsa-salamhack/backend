@@ -3,10 +3,12 @@ package routes
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/generative-ai-go/genai"
@@ -23,8 +25,9 @@ func init() {
 }
 
 type Article struct {
-	Lang string `json:"lang" example:"en"`
-	Wiki string `json:"wiki" example:"French_Revolution"`
+	Lang    string  `json:"lang"    example:"en"`
+	Wiki    string  `json:"wiki"    example:"French_Revolution"`
+	Section *string `json:"section" example:"Causes"`
 }
 
 type SummaryResponse struct {
@@ -47,14 +50,14 @@ func summaryHandler(c *fiber.Ctx) error {
 
 	client, err := genai.NewClient(ctx, option.WithAPIKey(os.Getenv("GEMINI_API_KEY")))
 	if err != nil {
-		return err
+		return fiber.NewError(fiber.StatusInternalServerError, "Gemini cant get up")
 	}
 
 	defer client.Close()
 
 	var wiki Article
 	if err := c.BodyParser(&wiki); err != nil {
-		return err
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
 	respo, _ := http.Get("http://localhost:5050/wiki/" + wiki.Lang + "/" + wiki.Wiki)
@@ -64,13 +67,31 @@ func summaryHandler(c *fiber.Ctx) error {
 	var data map[string]interface{}
 	json.Unmarshal(body, &data)
 
-	sysint := "You're a wikipedia summerizer, summerize the info inside the article text i give you while keeping all info intact, Keep it short under 3 paragraphs don't do more. avoid removing any or editing any:\n\n" + data["full_body"].(string)
+	var sysint string
+
+	if wiki.Section == nil {
+		sysint = "Summarize this article in under 3 paragraphs in " + wiki.Lang + ":\n\n" + data["full_body"].(string)
+	} else {
+		sections, ok := data["sections"].(map[string]interface{})
+		if !ok {
+			return errors.New("invalid sections format")
+		}
+
+		sectionKey := strings.TrimSpace(*wiki.Section)
+		sectionText, exists := sections[sectionKey].(map[string]interface{})
+		if !exists {
+			return fiber.NewError(fiber.StatusBadRequest, "Section is invalid")
+		}
+
+		sysint = "You're a Wikipedia summarizer. Summarize the given article section while keeping all info intact. Keep it under 3 paragraphs. Use " +
+			wiki.Lang + ":\n\n" + sectionText["body"].(string)
+	}
 	modelName := "gemini-1.5-flash"
 	model := client.GenerativeModel(modelName)
 
 	resp, err := model.GenerateContent(ctx, genai.Text(sysint))
 	if err != nil {
-		return err
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
 	content := fmt.Sprintf("%v", resp.Candidates[0].Content.Parts[0])

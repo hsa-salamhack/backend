@@ -9,7 +9,7 @@ func init() {
 	Register(Route{
 		Name:   "/messages/:chat_id",
 		Method: "GET",
-		Run:    getMessagesHandler,
+		Run:    handler,
 	})
 }
 
@@ -35,12 +35,18 @@ type MessagesResponse struct {
 // @Failure 400 {string} string "Bad request"
 // @Failure 500 {string} string "Internal server error"
 // @Router /messages/{chat_id} [get]
-func getMessagesHandler(c *fiber.Ctx) error {
+func handler(c *fiber.Ctx) error {
 	database.Connect()
 	chatID := c.Params("chat_id")
 
 	var messages []database.Message
 	database.DB.Where("chat_id = ?", chatID).Find(&messages)
+
+	if len(messages) == 0 {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Chat not found",
+		})
+	}
 
 	return c.JSON(fiber.Map{"messages": messages})
 }

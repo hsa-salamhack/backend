@@ -5,6 +5,7 @@ import bionicifyMarkdown from "bionic-markdown";
 
 async function parseBody(term, lang = "en") {
   let wikia = await wtf.fetch(term, lang);
+console.log(wikia)
   wikia = wikia
     .markdown()
     .replaceAll(/\[([^\]]+)\]\(\.\/(.*?)\)/g, `[$1](wiki/${lang}/$2)`)
@@ -19,12 +20,13 @@ async function parseBody(term, lang = "en") {
 
 async function getInfobox(term, lang = "en") {
   let wikia = await wtf.fetch(term, lang);
+  if(!wikia.infobox()) return null;
   let box = wikia.infobox().json();
 
   for (let key of Object.keys(box)) {
     if (/\.(png|jpe?g|gif|svg)$/i.test(box[key].text)) {
       let res = await fetch(
-        `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=imageinfo&iiprop=url&titles=File:${box[key].text}&origin=*`,
+        `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&prop=imageinfo&iiprop=url&titles=File:${box[key].text}&origin=*`,
       );
       let data = await res.json();
       box[key] =

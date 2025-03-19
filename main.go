@@ -7,15 +7,17 @@ import (
 	"github.com/gofiber/swagger"              // Import Swagger middleware
 	_ "github.com/hsa-salamhack/backend/docs" // Import generated docs
 	"github.com/hsa-salamhack/backend/routes"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 // @title Wiki? API
 // @version 0.5
 // @description Wiki? API
-// @host localhost:3000
+// @host 9.141.41.77:8080
 // @BasePath /
 func main() {
 	app := fiber.New()
+app.Use(cors.New())
 
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
@@ -36,5 +38,5 @@ func main() {
 		fmt.Printf("✅ %s %s\n", route.Method, route.Name)
 	}
 
-	app.Listen(":3000")
+	app.Listen(":8080")
 }
