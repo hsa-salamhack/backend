@@ -3,10 +3,8 @@ import wtfMarkdown from "wtf-plugin-markdown";
 wtf.extend(wtfMarkdown);
 import bionicifyMarkdown from "bionic-markdown";
 
-async function parseBody(term, lang = "en") {
-  let wikia = await wtf.fetch(term, lang);
-console.log(wikia)
-  wikia = wikia
+async function parseBody(wiki, lang = "en") {
+  let wikia = wiki
     .markdown()
     .replaceAll(/\[([^\]]+)\]\(\.\/(.*?)\)/g, `[$1](wiki/${lang}/$2)`)
     .replace(/(\|\s*.*\|\s*\n){2,}/g, "")
@@ -18,42 +16,58 @@ console.log(wikia)
   return wikia;
 }
 
-async function getInfobox(term, lang = "en") {
-  let wikia = await wtf.fetch(term, lang);
-  if(!wikia.infobox()) return null;
-  let box = wikia.infobox().json();
+async function getImages(wikia, lang = "en") {
+  if (!wikia.infobox())
+    return {
+      firstImage: wikia.images()[0].url(),
+    };
+  let box = wikia.infobox();
 
-  for (let key of Object.keys(box)) {
-    if (/\.(png|jpe?g|gif|svg)$/i.test(box[key].text)) {
+  let boxj = box.json();
+  let imgs = {};
+
+  for (let key of Object.keys(boxj)) {
+    if (/\.(png|jpe?g|gif|svg)$/i.test(boxj[key].text)) {
       let res = await fetch(
-        `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&prop=imageinfo&iiprop=url&titles=File:${box[key].text}&origin=*`,
+        `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&prop=imageinfo&iiprop=url&titles=File:${boxj[key].text}&origin=*`,
       );
       let data = await res.json();
-      box[key] =
+      imgs[key] =
         Object.values(data.query.pages)[0]?.imageinfo?.[0]?.url || null;
     }
   }
-
-  return box;
+  imgs.firstImage = wikia.images()[0].url();
+  return imgs;
 }
 
-async function sections(term, lang = "en") {
-  let wikia = await wtf.fetch(term, lang);
+async function sections(wikia, lang) {
   let sections = {};
   let map = wikia.sections();
 
-  map.forEach((section) => {
+  const sectionPromises = Array.from(map).map(async (section) => {
     if (section.title() && section.title() !== "") {
-      sections[section.title()] = {
-        body: section
-          .markdown()
-          .replaceAll(/\[([^\]]+)\]\(\.\/(.*?)\)/g, `[$1](wiki/${lang}/$2)`),
-        body_bionic: bionicifyMarkdown(
-          section
-            .markdown()
-            .replaceAll(/\[([^\]]+)\]\(\.\/(.*?)\)/g, `[$1](wiki/${lang}/$2)`),
-        ),
+      const bodyMarkdown = section
+        .markdown()
+        .replaceAll(/\[([^\]]+)\]\(\.\/(.*?)\)/g, `[$1](wiki/${lang}/$2)`);
+
+      const bodyBionic = await bionicifyMarkdown(bodyMarkdown);
+
+      return {
+        title: section.title(),
+        data: {
+          body: bodyMarkdown,
+          body_bionic: bodyBionic,
+        },
       };
+    }
+    return null;
+  });
+
+  let results = await Promise.all(sectionPromises);
+
+  results.forEach((result) => {
+    if (result) {
+      sections[result.title] = result.data;
     }
   });
 
@@ -61,24 +75,29 @@ async function sections(term, lang = "en") {
 }
 
 async function wiki(term, lang = "en") {
-  let fullbody = await parseBody(term, lang);
-  let bionic = await bionicifyMarkdown(fullbody);
+  let wikia = await wtf.fetch(term, lang);
 
-  let summary = (fullbody.match(/^([\s\S]*?)(?=#+ |$)/)?.[1] || "").trim();
+  let [fullbody, sects, imgs] = await Promise.all([
+    parseBody(wikia, lang),
+    sections(wikia, lang),
+    getImages(wikia, lang),
+  ]);
+
+  let [bionic, summary] = await Promise.all([
+    bionicifyMarkdown(fullbody),
+    (fullbody.match(/^([\s\S]*?)(?=#+ |$)/)?.[1] || "").trim(),
+  ]);
+
   let bionic_sum = await bionicifyMarkdown(summary);
-
-  let sects = await sections(term, lang);
-  let box = await getInfobox(term, lang);
 
   return {
     summary,
-    infobox: box,
+    images: imgs,
+    thumbnail: imgs?.firstImage || null,
     bionic_summary: bionic_sum,
     sections: sects,
-
     full_body: fullbody,
-    // full_body_bionic: bionic,
   };
 }
 
-export { parseBody, sections, getInfobox as infobox, wiki };
+export { wiki };
