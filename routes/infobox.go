@@ -104,7 +104,7 @@ If a Wikimedia image is available, include the URL. Example JSON structure:
   }
 }
 
-I'll now provide the article overview.`,
+I'll provide the article content in my next messages`,
 		wiki.Lang,
 	)
 

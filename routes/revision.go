@@ -19,8 +19,7 @@ type WikiRaw struct {
 				User      string `json:"user"`
 				Timestamp string `json:"timestamp"`
 				Comment   string `json:"comment"`
-				Anon      bool   `json:"anon,omitempty"`
-				Diff      string `json:"diff,omitempty"`
+				Anon      string `json:"anon,omitempty"`
 			} `json:"revisions"`
 		} `json:"pages"`
 	} `json:"query"`
@@ -31,19 +30,21 @@ type Revision struct {
 	Timestamp int64  `json:"timestamp"`
 	Comment   string `json:"comment"`
 	Action    string `json:"action"`
-	Diff      string `json:"diff"`
 }
 
 func CleanUp(comment string) string {
 	re := regexp.MustCompile(`\[\[.*?\]\]|\[\w+:\w+\||\(|\)|\[\w+:[\w/]+\|`)
 	comment = re.ReplaceAllString(comment, "")
+
 	comment = strings.ReplaceAll(comment, "[", "")
 	comment = strings.ReplaceAll(comment, "]", "")
+
 	return strings.TrimSpace(comment)
 }
 
 func DetectAction(comment string) string {
 	comment = strings.ToLower(comment)
+
 	actionPatterns := map[string][]string{
 		"revert":   {"revert", "reverted", "reverting", "rv", "rvv"},
 		"remove":   {"remove", "removed", "removing", "deletion", "deleted", "deleting"},
@@ -85,13 +86,9 @@ func init() {
 				lang = "en"
 			}
 
-			url := fmt.Sprintf(
-				"https://%s.wikipedia.org/w/api.php?action=query&format=json&prop=revisions&rvlimit=100&rvprop=user|timestamp|comment|content&rvdiffto=prev&titles=%s",
-				lang,
-				query,
+			resp, err := http.Get(
+				"https://" + lang + ".wikipedia.org/w/api.php?action=query&format=json&prop=revisions&rvlimit=100&titles=" + query,
 			)
-
-			resp, err := http.Get(url)
 			if err != nil {
 				fmt.Println("Error fetching data:", err)
 				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -132,17 +129,11 @@ func init() {
 					timestamp, _ := time.Parse(time.RFC3339, rev.Timestamp)
 					action := DetectAction(comment)
 
-					diff := ""
-					if rev.Diff != "" {
-						diff = rev.Diff
-					}
-
 					result = append(result, Revision{
 						User:      user,
 						Timestamp: timestamp.Unix(),
 						Comment:   comment,
 						Action:    action,
-						Diff:      diff,
 					})
 				}
 			}
