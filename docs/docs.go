@@ -61,6 +61,58 @@ const docTemplate = `{
                 }
             }
         },
+        "/infobox": {
+            "post": {
+                "description": "Generates a concise infobox using AI",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Wiki"
+                ],
+                "summary": "Generate article infobox",
+                "parameters": [
+                    {
+                        "description": "Article Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.ArticleO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "schema": {
+                            "$ref": "#/definitions/routes.InfoboxRes"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/messages/{chat_id}": {
             "get": {
                 "description": "Retrieves all messages for a specific chat ID",
@@ -291,6 +343,23 @@ const docTemplate = `{
                     "type": "string",
                     "example": "en"
                 },
+                "section": {
+                    "type": "string",
+                    "example": "Causes"
+                },
+                "wiki": {
+                    "type": "string",
+                    "example": "French_Revolution"
+                }
+            }
+        },
+        "routes.ArticleO": {
+            "type": "object",
+            "properties": {
+                "lang": {
+                    "type": "string",
+                    "example": "en"
+                },
                 "wiki": {
                     "type": "string",
                     "example": "French_Revolution"
@@ -331,6 +400,15 @@ const docTemplate = `{
                 }
             }
         },
+        "routes.InfoboxRes": {
+            "type": "object",
+            "properties": {
+                "infobox": {
+                    "type": "string",
+                    "example": "{name: 'French', leader: 'Bonaparte'}"
+                }
+            }
+        },
         "routes.MessageResponse": {
             "type": "object",
             "properties": {
@@ -342,10 +420,6 @@ const docTemplate = `{
                     "type": "string",
                     "example": "What is the capital of France?"
                 },
-                "created_at": {
-                    "type": "string",
-                    "example": "2025-03-17T23:23:46Z"
-                },
                 "id": {
                     "type": "integer",
                     "example": 2
@@ -353,6 +427,10 @@ const docTemplate = `{
                 "role": {
                     "type": "string",
                     "example": "User"
+                },
+                "topic": {
+                    "type": "string",
+                    "example": "French_Revolution"
                 }
             }
         },
@@ -370,6 +448,10 @@ const docTemplate = `{
         "routes.SearchResult": {
             "type": "object",
             "properties": {
+                "lang": {
+                    "type": "string",
+                    "example": "en"
+                },
                 "summary": {
                     "type": "string",
                     "example": "The French Revolution was a period of radical political and societal change in France..."
@@ -400,6 +482,26 @@ const docTemplate = `{
                     "type": "string",
                     "example": "The French Revolution was a period of radical political and societal change in France..."
                 },
+                "sections": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "body": {
+                                "type": "string",
+                                "example": "The French Revolution was a period of radical political and societal change in France..."
+                            },
+                            "title": {
+                                "type": "string",
+                                "example": "Causes"
+                            }
+                        }
+                    }
+                },
+                "summary": {
+                    "type": "string",
+                    "example": "The French Revolution was a period of radical political and societal change in France..."
+                },
                 "title": {
                     "type": "string",
                     "example": "French Revolution"
@@ -412,7 +514,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "0.5",
-	Host:             "localhost:3000",
+	Host:             "9.141.41.77:8080",
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "Wiki? API",

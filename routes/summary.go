@@ -86,7 +86,7 @@ func summaryHandler(c *fiber.Ctx) error {
 		sysint = "You're a Wikipedia summarizer. Summarize the given article section while keeping all info intact. Keep it under 3 paragraphs. Use " +
 			wiki.Lang + ":\n\n" + sectionText["body"].(string)
 	}
-	modelName := "gemini-1.5-flash"
+	modelName := "gemini-2.0-flash"
 	model := client.GenerativeModel(modelName)
 
 	resp, err := model.GenerateContent(ctx, genai.Text(sysint))

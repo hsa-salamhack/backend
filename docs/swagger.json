@@ -6,7 +6,7 @@
         "contact": {},
         "version": "0.5"
     },
-    "host": "localhost:3000",
+    "host": "9.141.41.77:8080",
     "basePath": "/",
     "paths": {
         "/chat": {
@@ -50,6 +50,58 @@
                         "description": "Internal server error",
                         "schema": {
                             "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/infobox": {
+            "post": {
+                "description": "Generates a concise infobox using AI",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Wiki"
+                ],
+                "summary": "Generate article infobox",
+                "parameters": [
+                    {
+                        "description": "Article Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.ArticleO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "schema": {
+                            "$ref": "#/definitions/routes.InfoboxRes"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -285,6 +337,23 @@
                     "type": "string",
                     "example": "en"
                 },
+                "section": {
+                    "type": "string",
+                    "example": "Causes"
+                },
+                "wiki": {
+                    "type": "string",
+                    "example": "French_Revolution"
+                }
+            }
+        },
+        "routes.ArticleO": {
+            "type": "object",
+            "properties": {
+                "lang": {
+                    "type": "string",
+                    "example": "en"
+                },
                 "wiki": {
                     "type": "string",
                     "example": "French_Revolution"
@@ -325,6 +394,15 @@
                 }
             }
         },
+        "routes.InfoboxRes": {
+            "type": "object",
+            "properties": {
+                "infobox": {
+                    "type": "string",
+                    "example": "{name: 'French', leader: 'Bonaparte'}"
+                }
+            }
+        },
         "routes.MessageResponse": {
             "type": "object",
             "properties": {
@@ -336,10 +414,6 @@
                     "type": "string",
                     "example": "What is the capital of France?"
                 },
-                "created_at": {
-                    "type": "string",
-                    "example": "2025-03-17T23:23:46Z"
-                },
                 "id": {
                     "type": "integer",
                     "example": 2
@@ -347,6 +421,10 @@
                 "role": {
                     "type": "string",
                     "example": "User"
+                },
+                "topic": {
+                    "type": "string",
+                    "example": "French_Revolution"
                 }
             }
         },
@@ -364,6 +442,10 @@
         "routes.SearchResult": {
             "type": "object",
             "properties": {
+                "lang": {
+                    "type": "string",
+                    "example": "en"
+                },
                 "summary": {
                     "type": "string",
                     "example": "The French Revolution was a period of radical political and societal change in France..."
@@ -391,6 +473,26 @@
             "type": "object",
             "properties": {
                 "full_body": {
+                    "type": "string",
+                    "example": "The French Revolution was a period of radical political and societal change in France..."
+                },
+                "sections": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "body": {
+                                "type": "string",
+                                "example": "The French Revolution was a period of radical political and societal change in France..."
+                            },
+                            "title": {
+                                "type": "string",
+                                "example": "Causes"
+                            }
+                        }
+                    }
+                },
+                "summary": {
                     "type": "string",
                     "example": "The French Revolution was a period of radical political and societal change in France..."
                 },

@@ -5,6 +5,18 @@ definitions:
       lang:
         example: en
         type: string
+      section:
+        example: Causes
+        type: string
+      wiki:
+        example: French_Revolution
+        type: string
+    type: object
+  routes.ArticleO:
+    properties:
+      lang:
+        example: en
+        type: string
       wiki:
         example: French_Revolution
         type: string
@@ -33,6 +45,12 @@ definitions:
         example: Paris is the capital of France.
         type: string
     type: object
+  routes.InfoboxRes:
+    properties:
+      infobox:
+        example: '{name: ''French'', leader: ''Bonaparte''}'
+        type: string
+    type: object
   routes.MessageResponse:
     properties:
       chat_id:
@@ -41,14 +59,14 @@ definitions:
       content:
         example: What is the capital of France?
         type: string
-      created_at:
-        example: "2025-03-17T23:23:46Z"
-        type: string
       id:
         example: 2
         type: integer
       role:
         example: User
+        type: string
+      topic:
+        example: French_Revolution
         type: string
     type: object
   routes.MessagesResponse:
@@ -60,6 +78,9 @@ definitions:
     type: object
   routes.SearchResult:
     properties:
+      lang:
+        example: en
+        type: string
       summary:
         example: The French Revolution was a period of radical political and societal
           change in France...
@@ -84,11 +105,27 @@ definitions:
         example: The French Revolution was a period of radical political and societal
           change in France...
         type: string
+      sections:
+        items:
+          properties:
+            body:
+              example: The French Revolution was a period of radical political and
+                societal change in France...
+              type: string
+            title:
+              example: Causes
+              type: string
+          type: object
+        type: array
+      summary:
+        example: The French Revolution was a period of radical political and societal
+          change in France...
+        type: string
       title:
         example: French Revolution
         type: string
     type: object
-host: localhost:3000
+host: 9.141.41.77:8080
 info:
   contact: {}
   description: Wiki? API
@@ -125,6 +162,40 @@ paths:
       summary: Chat with AI
       tags:
       - Chat
+  /infobox:
+    post:
+      consumes:
+      - application/json
+      description: Generates a concise infobox using AI
+      parameters:
+      - description: Article Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/routes.ArticleO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful response
+          schema:
+            $ref: '#/definitions/routes.InfoboxRes'
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Generate article infobox
+      tags:
+      - Wiki
   /messages/{chat_id}:
     get:
       consumes:

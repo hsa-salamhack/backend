@@ -108,7 +108,7 @@ I'll now provide the article overview.`,
 		wiki.Lang,
 	)
 
-	modelName := "gemini-1.5-flash"
+	modelName := "gemini-2.0-flash"
 	model := client.GenerativeModel(modelName)
 	model.SystemInstruction = genai.NewUserContent(genai.Text(sysint))
 
