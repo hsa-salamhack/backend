@@ -1,0 +1,16 @@
+Error: listen EADDRINUSE: address already in use :::5050
+    at Server.setupListenHandle [as _listen2] (node:net:1811:16)
+    at listenInCluster (node:net:1859:12)
+    at Server.listen (node:net:1947:7)
+    at Function.listen (/home/Darth/wiki/components/node_modules/express/lib/application.js:635:24)
+    at file:///home/Darth/wiki/components/index.js:13:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:195:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:336:24)
+    at async loadESM (node:internal/process/esm_loader:34:7)
+    at async handleMainPromise (node:internal/modules/run_main:106:12) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 5050
+}

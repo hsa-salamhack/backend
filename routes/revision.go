@@ -12,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// WikiRaw represents the raw response structure from Wikipedia API
 type WikiRaw struct {
 	Query struct {
 		Pages map[string]struct {
@@ -25,13 +26,15 @@ type WikiRaw struct {
 	} `json:"query"`
 }
 
+// Revision represents a single Wikipedia revision entry
 type Revision struct {
-	User      string `json:"user"`
-	Timestamp int64  `json:"timestamp"`
-	Comment   string `json:"comment"`
-	Action    string `json:"action"`
+	User      string `json:"user"`      // Username of the editor
+	Timestamp int64  `json:"timestamp"` // Unix timestamp of the edit
+	Comment   string `json:"comment"`   // Edit comment/summary
+	Action    string `json:"action"`    // Detected action type
 }
 
+// CleanUp removes wiki markup from revision comments
 func CleanUp(comment string) string {
 	re := regexp.MustCompile(`\[\[.*?\]\]|\[\w+:\w+\||\(|\)|\[\w+:[\w/]+\|`)
 	comment = re.ReplaceAllString(comment, "")
@@ -42,6 +45,7 @@ func CleanUp(comment string) string {
 	return strings.TrimSpace(comment)
 }
 
+// DetectAction identifies the type of edit from the comment
 func DetectAction(comment string) string {
 	comment = strings.ToLower(comment)
 
@@ -72,6 +76,16 @@ func init() {
 	Register(Route{
 		Name:   "/revision",
 		Method: "GET",
+		// @Summary Get Wikipedia article revision history
+		// @Description Fetches and processes revision history of a Wikipedia article
+		// @Tags wikipedia, revisions
+		// @Produce json
+		// @Param q query string true "Wikipedia article title"
+		// @Param lang query string false "Wikipedia language code" default(en)
+		// @Success 200 {array} Revision "List of processed article revisions"
+		// @Failure 400 {object} object "Bad request error when query parameter is missing"
+		// @Failure 500 {object} object "Internal server error when API call fails"
+		// @Router /revision [get]
 		Run: func(c *fiber.Ctx) error {
 			query := c.Query("q")
 			lang := c.Query("lang")

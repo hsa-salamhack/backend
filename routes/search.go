@@ -3,6 +3,7 @@ package routes
 import (
 	"strings"
 	"sync"
+	"fmt"
 
 	"github.com/abadojack/whatlanggo"
 	"github.com/gofiber/fiber/v2"
@@ -51,11 +52,28 @@ func search(c *fiber.Ctx) error {
 		})
 	}
 
-	var langMap = map[string]string{
+if lang == "" {
+	info := whatlanggo.Detect(query)
+	lango := info.Lang.Iso6393()
+	langiso := lango[:2]
+	fmt.Println("Lang: ", langiso)
+	if lango == "" {
+		lang = "en"
+	} else if langiso == "pe" {
+		lang = "ar"
+	} else if langiso == "ep" {
+		lang = "es"
+	} else {
+		lang = langiso
+	}
+}
+/*	var langMap = map[string]string{
 		"eng": "en", "ara": "ar", "fra": "fr", "deu": "de", "per": "ar",
 	}
 
+fmt.Println(lang)
 	if lang == "" {
+fmt.Println("pick")
 		info := whatlanggo.Detect(query)
 		langCode := info.Lang.Iso6393()
 		if val, ok := langMap[langCode]; ok {
@@ -64,7 +82,7 @@ func search(c *fiber.Ctx) error {
 			lang = "en"
 		}
 	}
-
+*/
 	cacheKey := query + "|" + lang
 	if entry, found := searchCache.Load(cacheKey); found {
 		return c.JSON(entry.(*cacheEntryy).results)
@@ -96,7 +114,7 @@ func search(c *fiber.Ctx) error {
 			searchRes := SearchResult{
 				Title: res,
 				Sum:   strings.TrimSpace(cutSum),
-				URL:   "/wiki/" + lang + "/" + res,
+				URL:   "/wiki/" + lang + "/" + strings.ReplaceAll(res, " ", "_"),
 				Lang:  lang,
 			}
 

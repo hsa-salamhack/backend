@@ -43,30 +43,70 @@ func init() {
 	})
 }
 
-// wiki represents the request payload for the wiki endpoint
+// WikiArticle represents the request payload for the wiki endpoint
 type WikiArticle struct {
 	Lang string `json:"lang" example:"en"`
 	Wiki string `json:"wiki" example:"French_Revolution"`
 }
 
-// wikiResponse represents the response from the wiki endpoint
-type wikiResponse struct {
-	Questions []string `json:"questions" example:"['1st Question', '2nd Question']"`
+type ErrorResponse struct {
+	Error string `json:"error" example:"Invalid request"`
+}
+
+// WikiRespons represents the response from the wiki endpoint
+type WikiRespons struct {
+	Questions []string `json:"questions" example:"["What were the main causes of the French Revolution?", "How did the Revolution impact European politics?", "Was the Reign of Terror justified?"]"`
 }
 
 type cachezStruct struct {
 	FullBody string `json:"full_body"`
 }
 
-// @Summary Prompts
-// @Description Gets 3 questions
-// @Tags wiki
+// resetCachee clears the cache every 5 minutes
+func resetCachee() {
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+	for range ticker.C {
+		wikiCachez = make(map[string]string)
+	}
+}
+
+// fetchWikii retrieves wiki content either from cache or from the wiki service
+func fetchWikii(lang, topic string) (string, error) {
+	cacheKey := lang + ":" + topic
+	if data, exists := wikiCachez[cacheKey]; exists {
+		return data, nil
+	}
+
+	respo, err := http.Get("http://localhost:5050/wiki/" + lang + "/" + topic)
+	if err != nil {
+		return "", err
+	}
+	defer respo.Body.Close()
+
+	body, err := io.ReadAll(respo.Body)
+	if err != nil {
+		return "", err
+	}
+
+	var data cachezStruct
+	if err := json.Unmarshal(body, &data); err != nil {
+		return "", err
+	}
+
+	wikiCachez[cacheKey] = data.FullBody
+	return data.FullBody, nil
+}
+
+// @Summary Generate discussion questions
+// @Description Generates 3 thought-provoking questions based on a Wikipedia article
+// @Tags Wiki
 // @Accept json
 // @Produce json
 // @Param request body WikiArticle true "Wiki Request Body"
-// @Success 200 {object} wikiResponse "Successful response"
-// @Failure 400 {object} fiber.Map "Bad request"
-// @Failure 500 {object} fiber.Map "Internal server error"
+// @Success 200 {object} WikiRespons "Successful response with generated questions"
+// @Failure 400 {object} ErrorResponse "Bad request when payload is invalid"
+// @Failure 500 {object} ErrorResponse "Internal server error when AI processing fails"
 // @Router /prompts [post]
 func promptHandler(c *fiber.Ctx) error {
 	var wiki WikiArticle
@@ -76,7 +116,7 @@ func promptHandler(c *fiber.Ctx) error {
 	wikiContent, err := fetchWikii(wiki.Lang, wiki.Wiki)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).
-			JSON(fiber.Map{"error": "Failed to fetch Wikipedia data"})
+			JSON(fiber.Map{"error": "Failed to fetch Wikipedia data " + err.Error()})
 	}
 
 	sysint := fmt.Sprintf(
@@ -88,6 +128,7 @@ Requirements:
 - Focus on questions that directly relate to the article's central arguments or claims
 - Include at least one question that invites debate or critical analysis
 - Formulate questions that would naturally arise for readers seeking deeper understanding
+- Please KEEP the questions SHORT, 5-8 words maximum.
 - Avoid basic factual questions in favor of those requiring analysis or opinion
 - Use %s langauge
 Format the JSON array as follows:
@@ -121,38 +162,4 @@ Article content will be provided
 	}
 
 	return c.JSON(result)
-}
-
-func fetchWikii(lang, topic string) (string, error) {
-	cacheKey := lang + ":" + topic
-	if data, exists := wikiCachez[cacheKey]; exists {
-		return data, nil
-	}
-
-	respo, err := http.Get("http://localhost:5050/wiki/" + lang + "/" + topic)
-	if err != nil {
-		return "", err
-	}
-	defer respo.Body.Close()
-
-	body, err := io.ReadAll(respo.Body)
-	if err != nil {
-		return "", err
-	}
-
-	var data cachezStruct
-	if err := json.Unmarshal(body, &data); err != nil {
-		return "", err
-	}
-
-	wikiCachez[cacheKey] = data.FullBody
-	return data.FullBody, nil
-}
-
-func resetCachee() {
-	ticker := time.NewTicker(5 * time.Minute)
-	defer ticker.Stop()
-	for range ticker.C {
-		wikiCachez = make(map[string]string)
-	}
 }

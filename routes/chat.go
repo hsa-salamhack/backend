@@ -58,8 +58,8 @@ type ChatResponse struct {
 	Message string `json:"message" example:"Paris is the capital of France."`
 }
 
-type CacheStruct struct {
-	FullBody string `json:"full_body"`
+type WikiResponse1 struct {
+    FullBody string `json:"full_body"`
 }
 
 // @Summary Chat with AI
@@ -87,8 +87,9 @@ func chatHandler(c *fiber.Ctx) error {
 
 	wikiContent, err := fetchWiki(chat.Lang, chat.Wiki)
 	if err != nil {
+fmt.Println(wikiContent)
 		return c.Status(fiber.StatusInternalServerError).
-			JSON(fiber.Map{"error": "Failed to fetch Wikipedia data"})
+			JSON(fiber.Map{"error": "Failed to fetch Wikipedia data " + err.Error()})
 	}
 
 	sysint := fmt.Sprintf(
@@ -136,7 +137,7 @@ func fetchWiki(lang, topic string) (string, error) {
 		return "", err
 	}
 
-	var data WikiResponse
+	var data WikiResponse1
 	if err := json.Unmarshal(body, &data); err != nil {
 		return "", err
 	}

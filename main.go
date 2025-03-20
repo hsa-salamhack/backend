@@ -10,10 +10,10 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
-// @title Wiki? API
+// @title Wikiless API
 // @version 0.5
-// @description Wiki? API
-// @host 9.141.41.77:8080
+// @description Wikiless API
+// @host 5bf067c778865d.lhr.life
 // @BasePath /
 func main() {
 	app := fiber.New()

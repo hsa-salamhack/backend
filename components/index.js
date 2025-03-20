@@ -8,4 +8,6 @@ app.get("/wiki/:lang/:term", async (req, res) => {
   res.json(await wiki(term, lang));
 });
 
+process.on("unhandledRejection", (e) => console.log(e));
+process.on("uncaughtException", (e) => console.log(e));
 app.listen(port);

@@ -157,6 +157,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/prompts": {
+            "post": {
+                "description": "Generates 3 thought-provoking questions based on a Wikipedia article",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Wiki"
+                ],
+                "summary": "Generate discussion questions",
+                "parameters": [
+                    {
+                        "description": "Wiki Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.WikiArticle"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response with generated questions",
+                        "schema": {
+                            "$ref": "#/definitions/routes.WikiRespons"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request when payload is invalid",
+                        "schema": {
+                            "$ref": "#/definitions/routes.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error when AI processing fails",
+                        "schema": {
+                            "$ref": "#/definitions/routes.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/search": {
             "get": {
                 "description": "Searches Wikipedia for articles matching the query",
@@ -400,6 +446,15 @@ const docTemplate = `{
                 }
             }
         },
+        "routes.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "Invalid request"
+                }
+            }
+        },
         "routes.InfoboxRes": {
             "type": "object",
             "properties": {
@@ -475,6 +530,33 @@ const docTemplate = `{
                 }
             }
         },
+        "routes.WikiArticle": {
+            "type": "object",
+            "properties": {
+                "lang": {
+                    "type": "string",
+                    "example": "en"
+                },
+                "wiki": {
+                    "type": "string",
+                    "example": "French_Revolution"
+                }
+            }
+        },
+        "routes.WikiRespons": {
+            "type": "object",
+            "properties": {
+                "questions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "["
+                    ]
+                }
+            }
+        },
         "routes.WikiResponse": {
             "type": "object",
             "properties": {
@@ -514,11 +596,11 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "0.5",
-	Host:             "9.141.41.77:8080",
+	Host:             "5bf067c778865d.lhr.life",
 	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "Wiki? API",
-	Description:      "Wiki? API",
+	Title:            "Wikiless API",
+	Description:      "Wikiless API",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

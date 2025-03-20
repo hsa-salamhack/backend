@@ -17,9 +17,9 @@ async function parseBody(wiki, lang = "en") {
 }
 
 async function getImages(wikia, lang = "en") {
-  if (!wikia.infobox())
-    return {
-      firstImage: wikia.images()[0].url(),
+  if (!wikia.infobox()) {
+     if(wikia.images()[0]) return {firstImage: wikia.images()[0].url()};
+    else return null;
     };
   let box = wikia.infobox();
 
@@ -36,8 +36,9 @@ async function getImages(wikia, lang = "en") {
         Object.values(data.query.pages)[0]?.imageinfo?.[0]?.url || null;
     }
   }
-  imgs.firstImage = wikia.images()[0].url();
-  return imgs;
+
+ if(wikia.images()[0]) imgs.firstImage = wikia.images()[0].url();
+  return imgs || null;
 }
 
 async function sections(wikia, lang) {
@@ -75,8 +76,8 @@ async function sections(wikia, lang) {
 }
 
 async function wiki(term, lang = "en") {
-  let wikia = await wtf.fetch(term, lang);
-
+  let wikia = await wtf.fetch(term, {lang, 'Api-User-Agent': 'spencermountain@gmail.com'});
+if(!wikia) return {status: 500, error: "Rate limited?"};
   let [fullbody, sects, imgs] = await Promise.all([
     parseBody(wikia, lang),
     sections(wikia, lang),

@@ -45,6 +45,12 @@ definitions:
         example: Paris is the capital of France.
         type: string
     type: object
+  routes.ErrorResponse:
+    properties:
+      error:
+        example: Invalid request
+        type: string
+    type: object
   routes.InfoboxRes:
     properties:
       infobox:
@@ -99,6 +105,24 @@ definitions:
           change in France...
         type: string
     type: object
+  routes.WikiArticle:
+    properties:
+      lang:
+        example: en
+        type: string
+      wiki:
+        example: French_Revolution
+        type: string
+    type: object
+  routes.WikiRespons:
+    properties:
+      questions:
+        example:
+        - '['
+        items:
+          type: string
+        type: array
+    type: object
   routes.WikiResponse:
     properties:
       full_body:
@@ -125,11 +149,11 @@ definitions:
         example: French Revolution
         type: string
     type: object
-host: 9.141.41.77:8080
+host: 5bf067c778865d.lhr.life
 info:
   contact: {}
-  description: Wiki? API
-  title: Wiki? API
+  description: Wikiless API
+  title: Wikiless API
   version: "0.5"
 paths:
   /chat:
@@ -225,6 +249,36 @@ paths:
       summary: Get chat messages
       tags:
       - Messages
+  /prompts:
+    post:
+      consumes:
+      - application/json
+      description: Generates 3 thought-provoking questions based on a Wikipedia article
+      parameters:
+      - description: Wiki Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/routes.WikiArticle'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful response with generated questions
+          schema:
+            $ref: '#/definitions/routes.WikiRespons'
+        "400":
+          description: Bad request when payload is invalid
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "500":
+          description: Internal server error when AI processing fails
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+      summary: Generate discussion questions
+      tags:
+      - Wiki
   /search:
     get:
       consumes:
